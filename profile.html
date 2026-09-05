@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyConnect - Client Profile & Transactions</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      const SUPABASE_URL = 'https://fhophxqeoeowhgqlihzq.supabase.co';
+      const SUPABASE_ANON_KEY = 'sb_publishable_moji8A_nvf8TRP1NsGKlyg_jlup6r6d';
+      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+</head>
+<body class="h-full text-slate-100 font-sans antialiased p-6 flex flex-col items-center justify-center min-h-screen">
+    <div class="max-w-3xl w-full bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-xl space-y-6">
+        
+        <!-- Large Logo Header -->
+        <div class="flex flex-col sm:flex-row justify-between items-center border-b border-slate-800 pb-6 gap-4">
+            <div class="flex items-center gap-4">
+                <img src="logo.png" alt="EasyConnect Logo" class="h-32 w-32 object-contain rounded-xl bg-slate-800 p-2 border border-slate-700 shadow" onerror="this.src='https://placehold.co/128x64/indigo/white?text=EasyConnect'">
+                <div>
+                    <h1 class="text-lg font-bold text-white">Client Portal</h1>
+                    <p class="text-xs text-slate-400">Account Dashboard & History</p>
+                </div>
+            </div>
+            <button onclick="logout()" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-3.5 py-2 rounded-xl text-xs font-semibold transition">
+                Logout
+            </button>
+        </div>
+
+        <!-- User Meta Info -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+        <p class="text-[10px] uppercase font-semibold text-slate-500">Full Name</p>
+        <p id="user-name" class="text-sm font-semibold text-white mt-1">Loading...</p>
+    </div>
+    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+        <p class="text-[10px] uppercase font-semibold text-slate-500">Email Address</p>
+        <p id="user-email" class="text-sm font-semibold text-white mt-1">Loading...</p>
+    </div>
+    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+        <p class="text-[10px] uppercase font-semibold text-slate-500">Phone Number</p>
+        <p id="user-phone" class="text-sm font-semibold text-white mt-1">Loading...</p>
+    </div>
+</div>
+        <!-- Transaction History Section -->
+        <div class="space-y-3">
+            <h2 class="font-bold text-sm text-white uppercase tracking-wider">Your Payment History</h2>
+            <div class="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-900/50 text-slate-400 border-b border-slate-800 uppercase tracking-wider font-semibold">
+                                <th class="p-3.5">Reference</th>
+                                <th class="p-3.5">Amount</th>
+                                <th class="p-3.5">Status</th>
+                                <th class="p-3.5">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-tx-body" class="divide-y divide-slate-800/60">
+                            <tr><td colspan="4" class="p-6 text-center text-slate-500">Loading your transactions...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-2 flex gap-4">
+            <a href="index.html" class="flex-1 text-center bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold py-3 rounded-xl transition text-xs">
+                Back to Home
+            </a>
+        </div>
+    </div>
+
+    <script>
+        async function initProfile() {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (!session || error) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const userEmail = session.user.email;
+            document.getElementById('user-email').innerText = userEmail;
+
+            try {
+                const res = await fetch('/api/get-customers');
+                const result = await res.json();
+
+                if (!result.status) throw new Error('Failed to fetch data');
+
+                const userTxs = result.transactions.filter(t => t.customer && t.customer.email.toLowerCase() === userEmail.toLowerCase());
+                const tbody = document.getElementById('user-tx-body');
+
+                if (userTxs.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-500">No transactions recorded for this account yet.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = userTxs.map(t => `
+                    <tr class="hover:bg-slate-900/40 transition">
+                        <td class="p-3.5 font-mono text-indigo-400">${t.reference}</td>
+                        <td class="p-3.5 font-bold text-white">₦${(t.amount / 100).toLocaleString()}</td>
+                        <td class="p-3.5">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-mono ${t.status === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400'}">${t.status}</span>
+                        </td>
+                        <td class="p-3.5 text-slate-400">${new Date(t.createdAt).toLocaleDateString()}</td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('user-tx-body').innerHTML = `<tr><td colspan="4" class="p-6 text-center text-rose-400">Could not retrieve transaction history.</td></tr>`;
+            }
+        }
+
+        async function logout() {
+            await supabase.auth.signOut();
+            window.location.href = 'login.html';
+        }
+
+        initProfile();
+        async function initProfile() {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (!session || error) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    const userEmail = session.user.email;
+    document.getElementById('user-email').innerText = userEmail;
+
+    // --- ADD THE PROFILE FETCH CODE HERE ---
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+    if (profile) {
+        document.getElementById('user-name').innerText = `${profile.first_name} ${profile.last_name}`;
+        document.getElementById('user-phone').innerText = profile.phone;
+    }
+    // ----------------------------------------
+
+    // Rest of your transaction fetching logic...
+}
+    </script>
+</body>
+</html>

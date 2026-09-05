@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyConnect Enterprise CRM & Analytics</title>
+    <!-- Tailwind CSS v4 -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Chart.js for Professional Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome for Enterprise Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="h-full text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- ==================== LOGIN SCREEN ==================== -->
+    <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4">
+        <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl space-y-6">
+            <div class="flex items-center gap-3">
+                <img src="logo.png" alt="EasyConnect Logo" class="h-10 w-10 object-contain rounded-lg bg-slate-800 p-1 border border-slate-700" onerror="this.src='https://placehold.co/40x40/indigo/white?text=EC'">
+                <div>
+                    <h2 class="text-xl font-bold text-white tracking-tight">EasyConnect Admin</h2>
+                    <p class="text-xs text-slate-400">Secure Enterprise Portal Access</p>
+                </div>
+            </div>
+            
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Master Password</label>
+                    <input type="password" id="password-input" placeholder="••••••••••••••••" required
+                        class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition">
+                </div>
+                <p id="login-error" class="text-xs text-rose-400 hidden font-medium"><i class="fa-solid fa-circle-exclamation mr-1"></i> Invalid master key. Try again.</p>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-indigo-600/20 text-sm">
+                    Authenticate Session
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN DASHBOARD LAYOUT ==================== -->
+    <div id="dashboard-content" class="min-h-full flex flex-col hidden">
+        
+        <!-- Top Navbar -->
+        <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-30 px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <img src="logo.png" alt="Logo" class="h-9 w-9 object-contain rounded-lg bg-slate-800 p-1 border border-slate-700" onerror="this.src='https://placehold.co/36x36/indigo/white?text=EC'">
+                <div>
+                    <h1 class="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                        EasyConnect <span class="text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full font-mono">v2.4 Enterprise</span>
+                    </h1>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="loadCRMData()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl text-xs font-semibold border border-slate-700 transition flex items-center gap-2">
+                    <i class="fa-solid fa-rotate"></i> Sync Live Data
+                </button>
+                <button onclick="logout()" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2">
+                    <i class="fa-solid fa-lock"></i> Lock
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Body Area -->
+        <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+
+            <!-- Metrics Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Revenue</p>
+                            <p id="metric-revenue" class="text-2xl font-black text-white mt-1">₦0.00</p>
+                        </div>
+                        <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20"><i class="fa-solid fa-wallet text-lg"></i></div>
+                    </div>
+                    <div class="mt-3 flex items-center gap-1.5 text-xs text-emerald-400 font-medium"><i class="fa-solid fa-arrow-trend-up"></i> Live Paystack Stream</div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Registered Customers</p>
+                            <p id="metric-customers" class="text-2xl font-black text-white mt-1">0</p>
+                        </div>
+                        <div class="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20"><i class="fa-solid fa-users text-lg"></i></div>
+                    </div>
+                    <div class="mt-3 flex items-center gap-1.5 text-xs text-blue-400 font-medium"><i class="fa-solid fa-address-book"></i> Active Profiles</div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Successful Txs</p>
+                            <p id="metric-txs" class="text-2xl font-black text-emerald-400 mt-1">0</p>
+                        </div>
+                        <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20"><i class="fa-solid fa-circle-check text-lg"></i></div>
+                    </div>
+                    <div class="mt-3 flex items-center gap-1.5 text-xs text-slate-400 font-medium">Verified Gateway Events</div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 relative overflow-hidden">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Assigned Managers</p>
+                            <p id="metric-managers" class="text-2xl font-black text-purple-400 mt-1">3 Active</p>
+                        </div>
+                        <div class="p-3 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20"><i class="fa-solid fa-user-tie text-lg"></i></div>
+                    </div>
+                    <div class="mt-3 flex items-center gap-1.5 text-xs text-purple-400 font-medium">Staff Coverage Active</div>
+                </div>
+            </div>
+
+            <!-- Analytics Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Revenue Bar Chart -->
+                <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-bold text-sm text-white uppercase tracking-wider">Transaction Volume & Revenue</h2>
+                        <span class="text-xs text-slate-400">Real-time aggregation</span>
+                    </div>
+                    <div class="relative flex-1 min-h-[260px]">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Manager Assignment Panel -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between">
+                    <div>
+                        <h2 class="font-bold text-sm text-white uppercase tracking-wider mb-4">Manager Assignments</h2>
+                        <p class="text-xs text-slate-400 mb-4">Assign dedicated account managers to oversee high-value customer accounts and support pipelines.</p>
+                        
+                        <div class="space-y-3">
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="h-8 w-8 rounded-lg bg-indigo-600/20 text-indigo-400 font-bold flex items-center justify-center text-xs">OB</div>
+                                    <div>
+                                        <p class="text-xs font-semibold text-white">Okoro Benjamin</p>
+                                        <p class="text-[10px] text-slate-400">Lead Enterprise Manager</p>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-mono">Assigned</span>
+                            </div>
+
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="h-8 w-8 rounded-lg bg-purple-600/20 text-purple-400 font-bold flex items-center justify-center text-xs">RE</div>
+                                    <div>
+                                        <p class="text-xs font-semibold text-white">Rebecca E.</p>
+                                        <p class="text-[10px] text-slate-400">Customer Success Lead</p>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-mono">Assigned</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="openManagerModal()" class="w-full mt-4 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2.5 rounded-xl text-xs font-semibold transition">
+                        <i class="fa-solid fa-user-plus mr-1"></i> Assign New Manager
+                    </button>
+                </div>
+            </div>
+
+            <!-- Customer Directory Table -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+                <div class="p-5 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="font-bold text-sm text-white uppercase tracking-wider">Customer Directory</h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Click any record for deep analytics and profile details.</p>
+                    </div>
+                    <div class="w-full sm:w-auto">
+                        <input type="text" id="search-box" placeholder="Search customer name or email..." onkeyup="filterTable()" 
+                            class="w-full sm:w-72 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-950/50 text-slate-400 border-b border-slate-800 uppercase tracking-wider font-semibold">
+                                <th class="p-4">Customer Name</th>
+                                <th class="p-4">Email Address</th>
+                                <th class="p-4">Phone Number</th>
+                                <th class="p-4">Customer Code</th>
+                                <th class="p-4">Assigned Manager</th>
+                                <th class="p-4">Joined Date</th>
+                                <th class="p-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customer-table-body" class="divide-y divide-slate-800/60">
+                            <tr><td colspan="7" class="p-8 text-center text-slate-500">Synchronizing records with Paystack gateway...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- ==================== CUSTOMER SIDE-VIEW DRAWER ==================== -->
+    <div id="customer-drawer" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex justify-end">
+        <div class="w-full max-w-xl bg-slate-900 border-l border-slate-800 h-full p-6 flex flex-col justify-between overflow-y-auto shadow-2xl">
+            <div class="space-y-6">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                    <div>
+                        <h2 id="drawer-name" class="text-lg font-bold text-white">Customer Profile</h2>
+                        <p id="drawer-code" class="text-xs font-mono text-indigo-400">CUS_xxxxxxx</p>
+                    </div>
+                    <button onclick="closeDrawer()" class="h-8 w-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 flex items-center justify-center transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Customer Details Grid -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <p class="text-[10px] uppercase font-semibold text-slate-500">Email Address</p>
+                        <p id="drawer-email" class="text-xs font-medium text-slate-200 mt-1 truncate">-</p>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <p class="text-[10px] uppercase font-semibold text-slate-500">Phone Number</p>
+                        <p id="drawer-phone" class="text-xs font-medium text-slate-200 mt-1">-</p>
+                    </div>
+                </div>
+
+                <!-- Manager Assignment Override -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Assigned Account Manager</label>
+                    <select id="drawer-manager-select" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                        <option value="Okoro Benjamin">Okoro Benjamin (Lead)</option>
+                        <option value="Rebecca E.">Rebecca E. (Success)</option>
+                        <option value="Unassigned">Unassigned</option>
+                    </select>
+                    <button onclick="saveCustomerManager()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 rounded-lg text-xs transition">
+                        Update Assignment
+                    </button>
+                </div>
+
+                <!-- Recent Transactions for Customer -->
+                <div>
+                    <h3 class="font-bold text-xs text-white uppercase tracking-wider mb-3">Customer Transaction History</h3>
+                    <div id="drawer-tx-list" class="space-y-2 max-h-48 overflow-y-auto">
+                        <p class="text-xs text-slate-500">No recent transactions recorded.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-800 pt-4 flex justify-between items-center">
+                <span class="text-[10px] text-slate-500">Secure Gateway Profile View</span>
+                <button onclick="closeDrawer()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold transition">Close Drawer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+    <script>
+        let globalCustomers = [];
+        let globalTransactions = [];
+        let revenueChartInstance = null;
+        let selectedCustomerCode = null;
+
+        // Session Check
+        if (sessionStorage.getItem('easyconnect_enterprise_auth') === 'true') {
+            showDashboard();
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const password = document.getElementById('password-input').value;
+            const errorEl = document.getElementById('login-error');
+            errorEl.classList.add('hidden');
+
+            try {
+                const res = await fetch('/api/verify-auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const data = await res.json();
+
+                if (data.status) {
+                    sessionStorage.setItem('easyconnect_enterprise_auth', 'true');
+                    showDashboard();
+                } else {
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorEl.innerText = 'Connection error with Vercel serverless function.';
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('login-modal').classList.add('hidden');
+            document.getElementById('dashboard-content').classList.remove('hidden');
+            loadCRMData();
+        }
+
+        function logout() {
+            sessionStorage.removeItem('easyconnect_enterprise_auth');
+            location.reload();
+        }
+
+        async function loadCRMData() {
+            try {
+                const res = await fetch('/api/get-customers');
+                const result = await res.json();
+                if (!result.status) throw new Error(result.message);
+
+                globalCustomers = result.customers || [];
+                globalTransactions = result.transactions || [];
+
+                // Update Metrics
+                document.getElementById('metric-customers').innerText = globalCustomers.length;
+                const successfulTxs = globalTransactions.filter(t => t.status === 'success');
+                document.getElementById('metric-txs').innerText = successfulTxs.length;
+
+                const totalRevenue = successfulTxs.reduce((sum, t) => sum + (t.amount / 100), 0);
+                document.getElementById('metric-revenue').innerText = `₦${totalRevenue.toLocaleString()}`;
+
+                renderTable(globalCustomers);
+                renderChart(globalTransactions);
+            } catch (err) {
+                console.error(err);
+                document.getElementById('customer-table-body').innerHTML = `<tr><td colspan="7" class="p-8 text-center text-rose-400">Failed to pull gateway data. Verify Paystack environment keys.</td></tr>`;
+            }
+        }
+
+        function renderTable(customers) {
+            const tbody = document.getElementById('customer-table-body');
+            if (customers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500">No customer records found.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = customers.map(c => {
+                const fullName = `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Unnamed Client';
+                const assignedManager = localStorage.getItem(`mgr_${c.customer_code}`) || 'Okoro Benjamin';
+
+                return `
+                    <tr class="hover:bg-slate-950/40 transition cursor-pointer" onclick="openDrawer('${c.customer_code}')">
+                        <td class="p-4 font-semibold text-white">${fullName}</td>
+                        <td class="p-4 text-slate-300">${c.email}</td>
+                        <td class="p-4 text-slate-400">${c.phone || 'N/A'}</td>
+                        <td class="p-4 font-mono text-indigo-400">${c.customer_code}</td>
+                        <td class="p-4"><span class="bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-2.5 py-1 rounded-full font-medium">${assignedManager}</span></td>
+                        <td class="p-4 text-slate-400">${new Date(c.createdAt).toLocaleDateString()}</td>
+                        <td class="p-4 text-right" onclick="event.stopPropagation()">
+                            <button onclick="openDrawer('${c.customer_code}')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg font-medium transition">
+                                View Profile
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderChart(transactions) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            
+            // Group transactions by date
+            const dateMap = {};
+            transactions.forEach(t => {
+                if(t.status === 'success') {
+                    const date = new Date(t.createdAt).toLocaleDateString();
+                    dateMap[date] = (dateMap[date] || 0) + (t.amount / 100);
+                }
+            });
+
+            const labels = Object.keys(dateMap).slice(-7);
+            const data = labels.map(l => dateMap[l]);
+
+            if (revenueChartInstance) revenueChartInstance.destroy();
+
+            revenueChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels.length > 0 ? labels : ['No Data'],
+                    datasets: [{
+                        label: 'Daily Revenue (₦)',
+                        data: data.length > 0 ? data : [0],
+                        backgroundColor: '#6366f1',
+                        borderRadius: 6,
+                        barThickness: 24
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+                        y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        function openDrawer(customerCode) {
+            selectedCustomerCode = customerCode;
+            const customer = globalCustomers.find(c => c.customer_code === customerCode);
+            if (!customer) return;
+
+            document.getElementById('drawer-name').innerText = `${customer.first_name || ''} ${customer.last_name || ''}` || 'Client Profile';
+            document.getElementById('drawer-code').innerText = customer.customer_code;
+            document.getElementById('drawer-email').innerText = customer.email;
+            document.getElementById('drawer-phone').innerText = customer.phone || 'Not Provided';
+
+            const currentMgr = localStorage.getItem(`mgr_${customer.customer_code}`) || 'Okoro Benjamin';
+            document.getElementById('drawer-manager-select').value = currentMgr;
+
+            // Filter transactions for this customer email
+            const customerTxs = globalTransactions.filter(t => t.customer && t.customer.email === customer.email);
+            const txListEl = document.getElementById('drawer-tx-list');
+            
+            if (customerTxs.length === 0) {
+                txListEl.innerHTML = `<p class="text-xs text-slate-500">No payment records linked to this email.</p>`;
+            } else {
+                txListEl.innerHTML = customerTxs.map(t => `
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
+                        <div>
+                            <p class="font-bold text-white">₦${(t.amount/100).toLocaleString()}</p>
+                            <p class="text-[10px] text-slate-500">${new Date(t.createdAt).toLocaleString()}</p>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-mono ${t.status === 'success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}">${t.status}</span>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('customer-drawer').classList.remove('hidden');
+        }
+
+        function closeDrawer() {
+            document.getElementById('customer-drawer').classList.add('hidden');
+            selectedCustomerCode = null;
+        }
+
+        function saveCustomerManager() {
+            if (!selectedCustomerCode) return;
+            const selectedMgr = document.getElementById('drawer-manager-select').value;
+            localStorage.setItem(`mgr_${selectedCustomerCode}`, selectedMgr);
+            alert(`Successfully assigned manager to customer.`);
+            closeDrawer();
+            renderTable(globalCustomers);
+        }
+
+        function openManagerModal() {
+            alert("Enterprise Manager Assignment: Use individual customer drawer profiles to assign specific account managers.");
+        }
+
+        function filterTable() {
+            const query = document.getElementById('search-box').value.toLowerCase();
+            const filtered = globalCustomers.filter(c => {
+                const name = `${c.first_name || ''} ${c.last_name || ''}`.toLowerCase();
+                return name.includes(query) || c.email.toLowerCase().includes(query);
+            });
+            renderTable(filtered);
+        }
+    </script>
+</body>
+</html>
